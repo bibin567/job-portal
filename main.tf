@@ -37,16 +37,15 @@ resource "aws_security_group" "web_server_sg" {
 
 resource "aws_instance" "web_server" {
   ami                    = "ami-053b0d53c279acc90"
-  instance_type          = "t2.micro"              # Replace with the desired EC2 instance type
+  instance_type          = "t2.micro"
   key_name               = "new"
   vpc_security_group_ids = [aws_security_group.web_server_sg.id]
 
-
-    user_data = <<-EOF
+  user_data = <<-EOF
               #!/bin/bash
               sudo apt-get update
               sudo apt-get install -y unzip
-              sudo apt-get install -y apache2 libapache2-mod-php
+              sudo apt-get install -y apache2 libapache2-mod-php php-mysql
 
               # Install git
               sudo apt-get install -y git
@@ -93,12 +92,18 @@ resource "aws_instance" "web_server" {
               # Import the jobportal.sql file into the database
               sudo mysql -u root jobportal < /var/www/html/job_portal/jobportal.sql
 
+              # Create a new MySQL user and grant privileges to it
+              sudo mysql -u root -e "CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';"
+              sudo mysql -u root -e "GRANT ALL PRIVILEGES ON jobportal.* TO 'admin'@'localhost';"
+              sudo mysql -u root -e "FLUSH PRIVILEGES;"
+
               EOF
 
-    tags = {
-      Name = "JobPortalInstance"
-    }
+  tags = {
+    Name = "JobPortalInstance"
   }
+}
+
 
 
 
